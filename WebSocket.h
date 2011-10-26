@@ -24,11 +24,17 @@
     - (void)webSocketDidSecure:(WebSocket*)webSocket;
 @end
 
+typedef enum {
+    WebSocketStateDisconnected,
+    WebSocketStateConnecting,
+    WebSocketStateConnected,
+} WebSocketState;
+
 @interface WebSocket : NSObject {
     id<WebSocketDelegate> delegate;
     NSURL *url;
     AsyncSocket *socket;
-    BOOL connected;
+    WebSocketState state;
     BOOL secure;
     NSString *origin;
     NSData *expectedChallenge;
@@ -38,7 +44,7 @@
 @property(nonatomic,assign) id<WebSocketDelegate> delegate;
 @property(nonatomic,readonly) NSURL *url;
 @property(nonatomic,retain) NSString *origin;
-@property(nonatomic,readonly) BOOL connected;
+@property(nonatomic,readonly) WebSocketState state;
 @property(nonatomic,readonly) BOOL secure;
 @property(nonatomic,retain) NSData *expectedChallenge;
 @property(nonatomic,retain) NSArray *runLoopModes;
@@ -49,6 +55,9 @@
 - (void)open;
 - (void)close;
 - (void)send:(NSString*)message;
+
+// Deprecated:
+- (BOOL)connected; // Returns state==WebSocketStateConnected
 
 @end
 

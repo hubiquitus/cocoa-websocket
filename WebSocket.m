@@ -61,9 +61,14 @@ typedef struct SecKey {
 @end
 
 
+@interface WebSocket ()
+@property(nonatomic,readwrite) WebSocketState state;
+@end
+
+
 @implementation WebSocket
 
-@synthesize delegate, url, origin, connected, expectedChallenge, runLoopModes, secure;
+@synthesize delegate, url, origin, state, expectedChallenge, runLoopModes, secure;
 
 #pragma mark Initializers
 
@@ -196,7 +201,7 @@ typedef struct SecKey {
 }
 
 - (void)open {
-    if (!connected) {
+    if ([self state] == WebSocketStateDisconnected) {
         if (secure) {
           NSDictionary *settings = nil;
           if (WEBSOCKET_DEV_MODE) {
@@ -217,6 +222,11 @@ typedef struct SecKey {
     [data appendData:[message dataUsingEncoding:NSUTF8StringEncoding]];
     [data appendBytes:"\xFF" length:1];
     [socket writeData:data withTimeout:-1 tag:WebSocketTagMessage];
+}
+
+- (BOOL)connected {
+    // Backwards compatibility only.
+    return [self state] == WebSocketStateConnected;
 }
 
 #pragma mark AsyncSocket delegate methods
@@ -248,12 +258,12 @@ typedef struct SecKey {
 }
 
 - (void)onSocketDidDisconnect:(AsyncSocket *)sock {
-    connected = NO;
+    [self setState:WebSocketStateDisconnected];
     [self _dispatchClosed];
 }
 
 - (void)onSocket:(AsyncSocket *)sock willDisconnectWithError:(NSError *)err {
-    if (!connected) {
+    if ([self state] == WebSocketStateConnecting) {
         [self _dispatchFailure:[self _makeError:WebSocketErrorConnectionFailed underlyingError:err]];
     } else {
         [self _dispatchFailure:err];
@@ -348,8 +358,7 @@ typedef struct SecKey {
                 return;
             }
 
-            connected = YES;
-
+            [self setState:WebSocketStateConnected];
             [self _dispatchOpened];
             [self _readNextMessage];
         } else {
