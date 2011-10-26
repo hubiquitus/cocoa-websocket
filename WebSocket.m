@@ -90,9 +90,9 @@ typedef struct SecKey {
 
 #pragma mark Delegate dispatch methods
 
-- (void)_dispatchFailure:(NSNumber*)code {
+- (void)_dispatchFailure:(NSError *)error {
     if(delegate && [delegate respondsToSelector:@selector(webSocket:didFailWithError:)]) {
-        [delegate webSocket:self didFailWithError:[NSError errorWithDomain:WebSocketErrorDomain code:[code intValue] userInfo:nil]];
+        [delegate webSocket:self didFailWithError:error];
     }
 }
 
@@ -181,10 +181,18 @@ typedef struct SecKey {
     }
 }
 
+- (NSError *)_makeError:(int)code underlyingError:(NSError *)underlyingError {
+    NSDictionary *userInfo = nil;
+    if (underlyingError) {
+        userInfo = [NSDictionary dictionaryWithObject:underlyingError forKey:NSUnderlyingErrorKey];
+    }
+    return [NSError errorWithDomain:WebSocketErrorDomain code:code userInfo:userInfo];
+}
+
 #pragma mark Public interface
 
 - (void)close {
-    [socket disconnectAfterReadingAndWriting];
+    [socket disconnect];
 }
 
 - (void)open {
@@ -241,13 +249,14 @@ typedef struct SecKey {
 
 - (void)onSocketDidDisconnect:(AsyncSocket *)sock {
     connected = NO;
+    [self _dispatchClosed];
 }
 
 - (void)onSocket:(AsyncSocket *)sock willDisconnectWithError:(NSError *)err {
     if (!connected) {
-        [self _dispatchFailure:[NSNumber numberWithInt:WebSocketErrorConnectionFailed]];
+        [self _dispatchFailure:[self _makeError:WebSocketErrorConnectionFailed underlyingError:err]];
     } else {
-        [self _dispatchClosed];
+        [self _dispatchFailure:err];
     }
 }
 
@@ -322,7 +331,7 @@ typedef struct SecKey {
         CFHTTPMessageRef message = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, FALSE);
 
         if (!CFHTTPMessageAppendBytes(message, [data bytes], [data length])) {
-            [self _dispatchFailure:[NSNumber numberWithInt:WebSocketErrorHandshakeFailed]];
+            [self _dispatchFailure:[self _makeError:WebSocketErrorHandshakeFailed underlyingError:nil]];
         }
 
         if (CFHTTPMessageIsHeaderComplete(message)) {
@@ -335,7 +344,7 @@ typedef struct SecKey {
             body = [(NSData *)CFHTTPMessageCopyBody(message) autorelease];
 
             if (![body isEqualToData:self.expectedChallenge]) {
-                [self _dispatchFailure:[NSNumber numberWithInt:WebSocketErrorHandshakeFailed]];
+                [self _dispatchFailure:[self _makeError:WebSocketErrorHandshakeFailed underlyingError:nil]];
                 return;
             }
 
@@ -344,7 +353,7 @@ typedef struct SecKey {
             [self _dispatchOpened];
             [self _readNextMessage];
         } else {
-            [self _dispatchFailure:[NSNumber numberWithInt:WebSocketErrorHandshakeFailed]];
+            [self _dispatchFailure:[self _makeError:WebSocketErrorHandshakeFailed underlyingError:nil]];
         }
 
     } else if (tag == WebSocketTagMessage) {
