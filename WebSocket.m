@@ -258,8 +258,13 @@ typedef struct SecKey {
 }
 
 - (void)onSocketDidDisconnect:(AsyncSocket *)sock {
+    BOOL wasConnected = ([self state] == WebSocketStateConnected);
     [self setState:WebSocketStateDisconnected];
-    [self _dispatchClosed];
+    
+    // Only dispatch the websocket closed message if it previously opened
+    // (completed the handshake). If it never opened, this is probably a 
+    // connection timeout error.
+    if (wasConnected) [self _dispatchClosed];
 }
 
 - (void)onSocket:(AsyncSocket *)sock willDisconnectWithError:(NSError *)err {
@@ -336,12 +341,14 @@ typedef struct SecKey {
         NSString *upgrade;
         NSString *connection;
         NSData *body;
-        UInt32 statusCode;
+        UInt32 statusCode = 0;
 
         CFHTTPMessageRef message = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, FALSE);
-
-        if (!CFHTTPMessageAppendBytes(message, [data bytes], [data length])) {
+        
+        if (!message || !CFHTTPMessageAppendBytes(message, [data bytes], [data length])) {
             [self _dispatchFailure:[self _makeError:WebSocketErrorHandshakeFailed underlyingError:nil]];
+            if (message) CFRelease(message);
+            return;
         }
 
         if (CFHTTPMessageIsHeaderComplete(message)) {
@@ -349,6 +356,7 @@ typedef struct SecKey {
             connection = [(NSString *) CFHTTPMessageCopyHeaderFieldValue(message, CFSTR("Connection")) autorelease];
             statusCode = (UInt32)CFHTTPMessageGetResponseStatusCode(message);
         }
+        CFRelease(message);
 
         if (statusCode == 101 && [upgrade isEqualToString:@"WebSocket"] && [connection isEqualToString:@"Upgrade"]) {
             body = [(NSData *)CFHTTPMessageCopyBody(message) autorelease];
