@@ -356,10 +356,10 @@ typedef struct SecKey {
             connection = [(NSString *) CFHTTPMessageCopyHeaderFieldValue(message, CFSTR("Connection")) autorelease];
             statusCode = (UInt32)CFHTTPMessageGetResponseStatusCode(message);
         }
-        CFRelease(message);
 
         if (statusCode == 101 && [upgrade isEqualToString:@"WebSocket"] && [connection isEqualToString:@"Upgrade"]) {
             body = [(NSData *)CFHTTPMessageCopyBody(message) autorelease];
+            CFRelease(message);
 
             if (![body isEqualToData:self.expectedChallenge]) {
                 [self _dispatchFailure:[self _makeError:WebSocketErrorHandshakeFailed underlyingError:nil]];
@@ -370,6 +370,7 @@ typedef struct SecKey {
             [self _dispatchOpened];
             [self _readNextMessage];
         } else {
+            CFRelease(message);
             [self _dispatchFailure:[self _makeError:WebSocketErrorHandshakeFailed underlyingError:nil]];
         }
 
