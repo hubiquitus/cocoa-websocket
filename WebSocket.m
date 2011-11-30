@@ -322,7 +322,7 @@ typedef struct SecKey {
 - (void)onSocket:(AsyncSocket *)sock didWriteDataWithTag:(long)tag {
     switch (tag) {
         case WebSocketTagHandshake:
-            [sock readDataToData:self.expectedChallenge withTimeout:5 tag:WebSocketTagHandshake];
+            [sock readDataToData:self.expectedChallenge withTimeout:15 tag:WebSocketTagHandshake];
             break;
 
         case WebSocketTagMessage:
