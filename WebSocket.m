@@ -211,7 +211,7 @@ typedef struct SecKey {
           [socket startTLS:settings];
         }
 
-        [socket connectToHost:url.host onPort:[url.port intValue] withTimeout:5 error:nil];
+        [socket connectToHost:url.host onPort:[url.port intValue] withTimeout:15 error:nil];
         if (runLoopModes) [socket setRunLoopModes:runLoopModes];
     }
 }
