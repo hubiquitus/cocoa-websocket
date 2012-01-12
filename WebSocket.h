@@ -16,12 +16,17 @@
 
 @protocol WebSocketDelegate<NSObject>
 @optional
-    - (void)webSocket:(WebSocket*)webSocket didFailWithError:(NSError*)error;
-    - (void)webSocketDidOpen:(WebSocket*)webSocket;
-    - (void)webSocketDidClose:(WebSocket*)webSocket;
-    - (void)webSocket:(WebSocket*)webSocket didReceiveMessage:(NSString*)message;
-    - (void)webSocketDidSendMessage:(WebSocket*)webSocket;
-    - (void)webSocketDidSecure:(WebSocket*)webSocket;
+- (void)webSocket:(WebSocket *)webSocket didFailWithError:(NSError *)error;
+- (void)webSocketDidOpen:(WebSocket *)webSocket;
+- (void)webSocketDidClose:(WebSocket *)webSocket;
+- (void)webSocket:(WebSocket *)webSocket didReceiveTextMessage:(NSString *)message;
+- (void)webSocket:(WebSocket *)webSocket didReceiveBinaryMessage:(NSData *)message;
+- (void)webSocketDidSendMessage:(WebSocket *)webSocket;
+- (void)webSocketDidSecure:(WebSocket *)webSocket;
+
+// Deprecated, but will work in place of |webSocket:didReceiveTextMessage:|
+// if you do not implement that method.
+- (void)webSocket:(WebSocket *)webSocket didReceiveMessage:(NSString *)message;
 @end
 
 typedef enum {
@@ -31,14 +36,7 @@ typedef enum {
 } WebSocketState;
 
 @interface WebSocket : NSObject {
-    id<WebSocketDelegate> delegate;
-    NSURL *url;
     AsyncSocket *socket;
-    WebSocketState state;
-    BOOL secure;
-    NSString *origin;
-    NSData *expectedChallenge;
-    NSArray* runLoopModes;
 }
 
 @property(nonatomic,assign) id<WebSocketDelegate> delegate;
@@ -46,7 +44,6 @@ typedef enum {
 @property(nonatomic,retain) NSString *origin;
 @property(nonatomic,readonly) WebSocketState state;
 @property(nonatomic,readonly) BOOL secure;
-@property(nonatomic,retain) NSData *expectedChallenge;
 @property(nonatomic,retain) NSArray *runLoopModes;
 
 + (id)webSocketWithURLString:(NSString *)urlString delegate:(id<WebSocketDelegate>)delegate;
