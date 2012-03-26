@@ -14,6 +14,6 @@
     WebSocket* webSocket;
 }
 
-@property (assign) IBOutlet NSWindow *window;
+@property (strong) IBOutlet NSWindow *window;
 
 @end

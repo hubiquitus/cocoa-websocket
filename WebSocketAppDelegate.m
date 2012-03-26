@@ -44,8 +44,7 @@
 }
 
 -(void) dealloc {
-    [webSocket release];
-    [super dealloc];
+    webSocket = nil;
 }
 
 @end

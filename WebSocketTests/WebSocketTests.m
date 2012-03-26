@@ -8,15 +8,22 @@
 #import "WebSocketTests.h"
 
 
-typedef struct SecKey {
-    uint32_t num;
-    NSString *key;
-} SecKey;
+//using objective-c interface, because c struct are not allowed in arc
+@interface SecKey : NSObject
+@property (nonatomic) uint32_t num;
+@property (nonatomic, strong) NSString * key;
+@end
+
+@implementation SecKey
+@synthesize num, key;
+
+@end
+
 
 
 @interface WebSocket (TestAdditions)
 
-- (struct SecKey)_makeKey;
+- (SecKey*)_makeKey;
 - (void)_makeChallengeNumber:(uint32_t)number withBuffer:(unsigned char *)buf;
 
 @end
@@ -49,7 +56,7 @@ typedef struct SecKey {
 
 - (void)testWebSocketKeyGeneration
 {
-    SecKey seckey;
+    SecKey * seckey = nil;
     NSString *key;
     unsigned char bytes[4];
 
