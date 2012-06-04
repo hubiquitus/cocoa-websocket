@@ -91,7 +91,7 @@ enum {
     self = [super init];
     if (self) {
         self.delegate = aDelegate;
-        url = [NSURL URLWithString:urlString];
+        url = [[NSURL alloc] initWithString:urlString];
         if (![url.scheme isEqualToString:@"ws"] && ![url.scheme isEqualToString:@"wss"]) {
           [NSException raise:WebSocketException format:@"Unsupported protocol %@", url.scheme];
         }
